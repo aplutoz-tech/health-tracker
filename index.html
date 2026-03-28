@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康追蹤器</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --primary: #4f46e5;
+  --primary-light: #818cf8;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* Auth Screen */
+.auth-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4f46e5 0%, #818cf8 50%, #a78bfa 100%);
+}
+
+.auth-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  text-align: center;
+}
+
+.auth-card h1 { font-size: 2rem; margin-bottom: 0.5rem; color: var(--primary); }
+.auth-card p { color: var(--text-secondary); margin-bottom: 2rem; }
+
+.auth-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+}
+.auth-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+
+.auth-btn {
+  width: 100%;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.5rem;
+}
+
+.auth-btn-primary { background: var(--primary); color: white; }
+.auth-btn-primary:hover { background: #4338ca; }
+
+.auth-btn-google {
+  background: white;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.auth-btn-google:hover { background: #f1f5f9; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  margin: 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.auth-divider::before { margin-right: 0.75rem; }
+.auth-divider::after { margin-left: 0.75rem; }
+
+.auth-toggle {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.auth-toggle a {
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth-toggle a:hover { text-decoration: underline; }
+
+.auth-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  display: none;
+}
+
+/* App */
+.app { display: none; }
+
+.app-header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(79,70,229,0.3);
+}
+
+.app-header h1 { font-size: 1.5rem; font-weight: 700; }
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-email {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.logout-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  background: transparent;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.logout-btn:hover { background: rgba(255,255,255,0.15); }
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.spinner {
+  width: 40px; height: 40px;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 1rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.tab-btn {
+  padding: 0.7rem 1.2rem;
+  border: 2px solid var(--border);
+  background: var(--card);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab-btn:hover { border-color: var(--primary-light); color: var(--primary); }
+.tab-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Cards */
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  border: 1px solid var(--border);
+}
+
+.card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card h2 .icon { font-size: 1.4rem; }
+
+/* Forms */
+.form-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 140px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.3rem;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+  background: var(--bg);
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+}
+
+textarea { resize: vertical; min-height: 60px; }
+
+.btn {
+  padding: 0.65rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: #4338ca; }
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+}
+.btn-danger:hover { background: var(--danger); color: white; }
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Summary cards */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 1.2rem;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.summary-card .value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.summary-card .label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+}
+
+.summary-card .sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.3rem;
+}
+
+/* Records list */
+.record-list { max-height: 400px; overflow-y: auto; }
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  gap: 0.5rem;
+}
+
+.record-item:last-child { border-bottom: none; }
+
+.record-info { flex: 1; }
+.record-info .date { font-size: 0.8rem; color: var(--text-secondary); }
+.record-info .detail { font-weight: 500; }
+.record-info .meta { font-size: 0.85rem; color: var(--text-secondary); }
+
+.record-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-calories { background: #fef3c7; color: #92400e; }
+.badge-exercise { background: #dbeafe; color: #1e40af; }
+.badge-weight { background: #dcfce7; color: #166534; }
+
+/* Chart */
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin-top: 1rem;
+}
+
+/* Tab content */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Date filter */
+.date-filter {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.date-filter label { font-weight: 600; font-size: 0.9rem; }
+
+.filter-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.filter-btn.active, .filter-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Export/Import */
+.data-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Sync indicator */
+.sync-status {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--text);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  z-index: 10000;
+  transition: transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container { padding: 1rem; }
+  .form-row { flex-direction: column; }
+  .form-group { min-width: 100%; }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .tabs { gap: 0.3rem; }
+  .tab-btn { padding: 0.5rem 0.8rem; font-size: 0.85rem; }
+  .app-header { padding: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+  .app-header h1 { font-size: 1.2rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <span>載入中...</span>
+</div>
+
+<!-- Auth Screen -->
+<div class="auth-screen" id="auth-screen" style="display:none;">
+  <div class="auth-card">
+    <h1>健康追蹤器</h1>
+    <p>記錄飲食、運動、體重與體脂</p>
+
+    <div class="auth-error" id="auth-error"></div>
+
+    <div id="login-form">
+      <input class="auth-input" type="email" id="auth-email" placeholder="電子郵件" autocomplete="email">
+      <input class="auth-input" type="password" id="auth-password" placeholder="密碼" autocomplete="current-password">
+      <button class="auth-btn auth-btn-primary" id="login-btn" onclick="handleLogin()">登入</button>
+      <div class="auth-divider">或</div>
+      <button class="auth-btn auth-btn-google" onclick="handleGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        使用 Google 帳號登入
+      </button>
+      <div class="auth-toggle">
+        還沒有帳號？<a onclick="toggleAuthMode()">註冊</a>
+      </div>
+    </div>
+
+    <div id="register-form" style="display:none;">
+      <input class="auth-input" type="email" id="reg-email" placeholder="電子郵件" autocomplete="email">
+      <input class="auth-input" type="password" id="reg-password" placeholder="密碼（至少 6 位）" autocomplete="new-password">
+      <input class="auth-input" type="password" id="reg-password2" placeholder="確認密碼" autocomplete="new-password">
+      <button class="auth-btn auth-btn-primary" onclick="handleRegister()">註冊</button>
+      <div class="auth-divider">或</div>
+      <button class="auth-btn auth-btn-google" onclick="handleGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        使用 Google 帳號註冊
+      </button>
+      <div class="auth-toggle">
+        已有帳號？<a onclick="toggleAuthMode()">登入</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div class="app" id="app">
+  <header class="app-header">
+    <h1>健康追蹤器</h1>
+    <div class="user-info">
+      <span class="user-email" id="user-email"></span>
+      <div class="sync-status" id="sync-status"></div>
+      <button class="logout-btn" onclick="handleLogout()">登出</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="dashboard">總覽</button>
+      <button class="tab-btn" data-tab="diet">飲食記錄</button>
+      <button class="tab-btn" data-tab="exercise">運動記錄</button>
+      <button class="tab-btn" data-tab="body">體重/體脂</button>
+      <button class="tab-btn" data-tab="charts">趨勢圖表</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="tab-dashboard" class="tab-content active">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="value" id="today-calories">0</div>
+          <div class="label">今日攝取熱量</div>
+          <div class="sub">大卡 (kcal)</div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="today-exercise">0</div>
+          <div class="label">今日運動時長</div>
+          <div class="sub">分鐘</div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="latest-weight">--</div>
+          <div class="label">最近體重</div>
+          <div class="sub" id="weight-change"></div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="latest-bf">--</div>
+          <div class="label">最近體脂率</div>
+          <div class="sub" id="bf-change"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📋</span> 今日記錄</h2>
+        <div class="record-list" id="today-records">
+          <p style="color:var(--text-secondary);text-align:center;padding:2rem;">今天還沒有任何記錄</p>
+        </div>
+      </div>
+
+      <div class="data-actions">
+        <button class="btn btn-sm" style="background:var(--success);color:white;" onclick="exportData()">匯出資料</button>
+        <label class="btn btn-sm" style="background:var(--info);color:white;cursor:pointer;">
+          匯入資料
+          <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
+        </label>
+      </div>
+    </div>
+
+    <!-- Diet -->
+    <div id="tab-diet" class="tab-content">
+      <div class="card">
+        <h2><span class="icon">🍽️</span> 新增飲食記錄</h2>
+        <form id="diet-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>日期</label>
+              <input type="date" id="diet-date" required>
+            </div>
+            <div class="form-group">
+              <label>餐別</label>
+              <select id="diet-meal">
+                <option value="早餐">早餐</option>
+                <option value="午餐">午餐</option>
+                <option value="晚餐">晚餐</option>
+                <option value="點心">點心</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>食物名稱</label>
+              <input type="text" id="diet-food" placeholder="例：雞胸肉便當" required>
+            </div>
+            <div class="form-group">
+              <label>熱量 (kcal)</label>
+              <input type="number" id="diet-calories" placeholder="500" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>蛋白質 (g)</label>
+              <input type="number" id="diet-protein" placeholder="30" min="0" step="0.1">
+            </div>
+            <div class="form-group">
+              <label>碳水化合物 (g)</label>
+              <input type="number" id="diet-carbs" placeholder="60" min="0" step="0.1">
+            </div>
+            <div class="form-group">
+              <label>脂肪 (g)</label>
+              <input type="number" id="diet-fat" placeholder="15" min="0" step="0.1">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="min-width:100%;">
+              <label>備註</label>
+              <textarea id="diet-note" placeholder="選填"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">儲存飲食記錄</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📜</span> 飲食歷史</h2>
+        <div class="record-list" id="diet-records"></div>
+      </div>
+    </div>
+
+    <!-- Exercise -->
+    <div id="tab-exercise" class="tab-content">
+      <div class="card">
+        <h2><span class="icon">🏃</span> 新增運動記錄</h2>
+        <form id="exercise-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>日期</label>
+              <input type="date" id="ex-date" required>
+            </div>
+            <div class="form-group">
+              <label>運動類型</label>
+              <select id="ex-type">
+                <option value="跑步">跑步</option>
+                <option value="健身">健身</option>
+                <option value="游泳">游泳</option>
+                <option value="騎車">騎車</option>
+                <option value="瑜伽">瑜伽</option>
+                <option value="籃球">籃球</option>
+                <option value="羽毛球">羽毛球</option>
+                <option value="走路">走路</option>
+                <option value="其他">其他</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>時長 (分鐘)</label>
+              <input type="number" id="ex-duration" placeholder="30" min="1" required>
+            </div>
+            <div class="form-group">
+              <label>消耗熱量 (kcal)</label>
+              <input type="number" id="ex-calories" placeholder="200" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="min-width:100%;">
+              <label>備註</label>
+              <textarea id="ex-note" placeholder="例：5 公里慢跑"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">儲存運動記錄</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📜</span> 運動歷史</h2>
+        <div class="record-list" id="exercise-records"></div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div id="tab-body" class="tab-content">
+      <div class="card">
+        <h2><span class="icon">⚖️</span> 新增體重/體脂記錄</h2>
+        <form id="body-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>日期</label>
+              <input type="date" id="body-date" required>
+            </div>
+            <div class="form-group">
+              <label>體重 (kg)</label>
+              <input type="number" id="body-weight" placeholder="70.0" min="20" max="300" step="0.1" required>
+            </div>
+            <div class="form-group">
+              <label>體脂率 (%)</label>
+              <input type="number" id="body-bf" placeholder="20.0" min="1" max="60" step="0.1">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="min-width:100%;">
+              <label>備註</label>
+              <textarea id="body-note" placeholder="例：早上空腹量測"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">儲存體重記錄</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📜</span> 體重/體脂歷史</h2>
+        <div class="record-list" id="body-records"></div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div id="tab-charts" class="tab-content">
+      <div class="date-filter">
+        <label>時間範圍：</label>
+        <button class="filter-btn active" data-range="7">7天</button>
+        <button class="filter-btn" data-range="30">30天</button>
+        <button class="filter-btn" data-range="90">90天</button>
+        <button class="filter-btn" data-range="all">全部</button>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📈</span> 體重趨勢</h2>
+        <div class="chart-container">
+          <canvas id="weight-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">📊</span> 體脂率趨勢</h2>
+        <div class="chart-container">
+          <canvas id="bf-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🔥</span> 每日熱量攝取</h2>
+        <div class="chart-container">
+          <canvas id="calories-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">💪</span> 每日運動時長</h2>
+        <div class="chart-container">
+          <canvas id="exercise-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// Firebase Configuration
+// ============================================================
+// *** 請將下方的設定替換為你自己的 Firebase 專案設定 ***
+const firebaseConfig = {
+  apiKey: "AIzaSyDFgevfT1ZjlT-2HuSAe9BrlbJ9RejJjIQ",
+  authDomain: "health-tracker-a0b55.firebaseapp.com",
+  projectId: "health-tracker-a0b55",
+  storageBucket: "health-tracker-a0b55.firebasestorage.app",
+  messagingSenderId: "379960185245",
+  appId: "1:379960185245:web:2cb9a72ec303ad1fe15f74"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Enable offline persistence
+db.enablePersistence().catch(() => {});
+
+// ============================================================
+// State
+// ============================================================
+let currentUser = null;
+let userData = { diet: [], exercise: [], body: [] };
+let unsubscribers = [];
+
+// ============================================================
+// Toast
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// Auth
+// ============================================================
+let isRegisterMode = false;
+
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
+  document.getElementById('login-form').style.display = isRegisterMode ? 'none' : 'block';
+  document.getElementById('register-form').style.display = isRegisterMode ? 'block' : 'none';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function handleLogin() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if (!email || !password) return showAuthError('請填寫電子郵件和密碼');
+  document.getElementById('login-btn').disabled = true;
+  auth.signInWithEmailAndPassword(email, password)
+    .catch(err => {
+      document.getElementById('login-btn').disabled = false;
+      const msgs = {
+        'auth/user-not-found': '找不到此帳號',
+        'auth/wrong-password': '密碼錯誤',
+        'auth/invalid-email': '電子郵件格式不正確',
+        'auth/invalid-credential': '帳號或密碼錯誤',
+        'auth/too-many-requests': '嘗試次數過多，請稍後再試',
+      };
+      showAuthError(msgs[err.code] || err.message);
+    });
+}
+
+function handleRegister() {
+  const email = document.getElementById('reg-email').value.trim();
+  const pw = document.getElementById('reg-password').value;
+  const pw2 = document.getElementById('reg-password2').value;
+  if (!email || !pw) return showAuthError('請填寫電子郵件和密碼');
+  if (pw !== pw2) return showAuthError('兩次密碼不一致');
+  if (pw.length < 6) return showAuthError('密碼至少需要 6 位');
+  auth.createUserWithEmailAndPassword(email, pw)
+    .catch(err => {
+      const msgs = {
+        'auth/email-already-in-use': '此電子郵件已被註冊',
+        'auth/invalid-email': '電子郵件格式不正確',
+        'auth/weak-password': '密碼強度不足',
+      };
+      showAuthError(msgs[err.code] || err.message);
+    });
+}
+
+function handleGoogleLogin() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    if (err.code !== 'auth/popup-closed-by-user') {
+      showAuthError(err.message);
+    }
+  });
+}
+
+function handleLogout() {
+  unsubscribers.forEach(fn => fn());
+  unsubscribers = [];
+  auth.signOut();
+}
+
+// Enter key for login/register
+document.getElementById('auth-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+document.getElementById('reg-password2').addEventListener('keydown', e => { if (e.key === 'Enter') handleRegister(); });
+
+// ============================================================
+// Auth state change
+// ============================================================
+auth.onAuthStateChanged(user => {
+  document.getElementById('loading').style.display = 'none';
+  if (user) {
+    currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = user.email || user.displayName || '';
+    subscribeToData();
+  } else {
+    currentUser = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    unsubscribers.forEach(fn => fn());
+    unsubscribers = [];
+    userData = { diet: [], exercise: [], body: [] };
+  }
+});
+
+// ============================================================
+// Firestore Data Layer
+// ============================================================
+function userCol(collection) {
+  return db.collection('users').doc(currentUser.uid).collection(collection);
+}
+
+function subscribeToData() {
+  const collections = ['diet', 'exercise', 'body'];
+  collections.forEach(col => {
+    const unsub = userCol(col).orderBy('date', 'desc').onSnapshot(snapshot => {
+      userData[col] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onDataChange();
+    }, err => {
+      console.error('Firestore listen error:', err);
+    });
+    unsubscribers.push(unsub);
+  });
+}
+
+function onDataChange() {
+  // Refresh whichever tab is currently active
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (!activeTab) return;
+  const tab = activeTab.dataset.tab;
+  if (tab === 'dashboard') refreshDashboard();
+  else if (tab === 'diet') renderDietRecords();
+  else if (tab === 'exercise') renderExerciseRecords();
+  else if (tab === 'body') renderBodyRecords();
+  else if (tab === 'charts') renderCharts();
+}
+
+async function addRecord(collection, record) {
+  record.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  await userCol(collection).add(record);
+  showToast('已儲存！');
+}
+
+async function deleteRecordById(collection, id) {
+  await userCol(collection).doc(id).delete();
+  showToast('已刪除');
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// ============================================================
+// Tab Navigation
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    onDataChange();
+  });
+});
+
+// Set default dates
+document.getElementById('diet-date').value = today();
+document.getElementById('ex-date').value = today();
+document.getElementById('body-date').value = today();
+
+// ============================================================
+// Diet Form
+// ============================================================
+document.getElementById('diet-form').addEventListener('submit', e => {
+  e.preventDefault();
+  addRecord('diet', {
+    date: document.getElementById('diet-date').value,
+    meal: document.getElementById('diet-meal').value,
+    food: document.getElementById('diet-food').value,
+    calories: +document.getElementById('diet-calories').value || 0,
+    protein: +document.getElementById('diet-protein').value || 0,
+    carbs: +document.getElementById('diet-carbs').value || 0,
+    fat: +document.getElementById('diet-fat').value || 0,
+    note: document.getElementById('diet-note').value,
+  });
+  e.target.reset();
+  document.getElementById('diet-date').value = today();
+});
+
+// ============================================================
+// Exercise Form
+// ============================================================
+document.getElementById('exercise-form').addEventListener('submit', e => {
+  e.preventDefault();
+  addRecord('exercise', {
+    date: document.getElementById('ex-date').value,
+    type: document.getElementById('ex-type').value,
+    duration: +document.getElementById('ex-duration').value || 0,
+    calories: +document.getElementById('ex-calories').value || 0,
+    note: document.getElementById('ex-note').value,
+  });
+  e.target.reset();
+  document.getElementById('ex-date').value = today();
+});
+
+// ============================================================
+// Body Form
+// ============================================================
+document.getElementById('body-form').addEventListener('submit', e => {
+  e.preventDefault();
+  addRecord('body', {
+    date: document.getElementById('body-date').value,
+    weight: +document.getElementById('body-weight').value,
+    bf: +document.getElementById('body-bf').value || null,
+    note: document.getElementById('body-note').value,
+  });
+  e.target.reset();
+  document.getElementById('body-date').value = today();
+});
+
+// ============================================================
+// Render Functions
+// ============================================================
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderDietRecords() {
+  const records = userData.diet;
+  const el = document.getElementById('diet-records');
+  if (!records.length) {
+    el.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:2rem;">尚無飲食記錄</p>';
+    return;
+  }
+  el.innerHTML = records.map(r => `
+    <div class="record-item">
+      <div class="record-info">
+        <div class="date">${escapeHtml(r.date)} · ${escapeHtml(r.meal)}</div>
+        <div class="detail">${escapeHtml(r.food)}</div>
+        <div class="meta">
+          ${r.calories ? r.calories + ' kcal' : ''}
+          ${r.protein ? ' · 蛋白質 ' + r.protein + 'g' : ''}
+          ${r.carbs ? ' · 碳水 ' + r.carbs + 'g' : ''}
+          ${r.fat ? ' · 脂肪 ' + r.fat + 'g' : ''}
+          ${r.note ? ' · ' + escapeHtml(r.note) : ''}
+        </div>
+      </div>
+      <span class="record-badge badge-calories">${r.calories || 0} kcal</span>
+      <button class="btn btn-danger" onclick="deleteRecordById('diet','${r.id}')">刪除</button>
+    </div>
+  `).join('');
+}
+
+function renderExerciseRecords() {
+  const records = userData.exercise;
+  const el = document.getElementById('exercise-records');
+  if (!records.length) {
+    el.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:2rem;">尚無運動記錄</p>';
+    return;
+  }
+  el.innerHTML = records.map(r => `
+    <div class="record-item">
+      <div class="record-info">
+        <div class="date">${escapeHtml(r.date)}</div>
+        <div class="detail">${escapeHtml(r.type)} · ${r.duration} 分鐘</div>
+        <div class="meta">
+          ${r.calories ? '消耗 ' + r.calories + ' kcal' : ''}
+          ${r.note ? ' · ' + escapeHtml(r.note) : ''}
+        </div>
+      </div>
+      <span class="record-badge badge-exercise">${r.duration} 分鐘</span>
+      <button class="btn btn-danger" onclick="deleteRecordById('exercise','${r.id}')">刪除</button>
+    </div>
+  `).join('');
+}
+
+function renderBodyRecords() {
+  const records = userData.body;
+  const el = document.getElementById('body-records');
+  if (!records.length) {
+    el.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:2rem;">尚無體重記錄</p>';
+    return;
+  }
+  el.innerHTML = records.map(r => `
+    <div class="record-item">
+      <div class="record-info">
+        <div class="date">${escapeHtml(r.date)}</div>
+        <div class="detail">${r.weight} kg${r.bf ? ' · 體脂 ' + r.bf + '%' : ''}</div>
+        <div class="meta">${r.note ? escapeHtml(r.note) : ''}</div>
+      </div>
+      <span class="record-badge badge-weight">${r.weight} kg</span>
+      <button class="btn btn-danger" onclick="deleteRecordById('body','${r.id}')">刪除</button>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// Dashboard
+// ============================================================
+function refreshDashboard() {
+  const d = today();
+  const dietToday = userData.diet.filter(r => r.date === d);
+  const exToday = userData.exercise.filter(r => r.date === d);
+  const bodyAll = userData.body;
+
+  document.getElementById('today-calories').textContent = dietToday.reduce((s, r) => s + (r.calories || 0), 0);
+  document.getElementById('today-exercise').textContent = exToday.reduce((s, r) => s + (r.duration || 0), 0);
+
+  document.getElementById('latest-weight').textContent = '--';
+  document.getElementById('latest-bf').textContent = '--';
+  document.getElementById('weight-change').textContent = '';
+  document.getElementById('bf-change').textContent = '';
+
+  if (bodyAll.length > 0) {
+    const sorted = [...bodyAll].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const latest = sorted[0];
+    document.getElementById('latest-weight').textContent = latest.weight;
+    document.getElementById('latest-bf').textContent = latest.bf ? latest.bf + '%' : '--';
+
+    if (sorted.length > 1) {
+      const prev = sorted[1];
+      const wDiff = (latest.weight - prev.weight).toFixed(1);
+      document.getElementById('weight-change').textContent = (wDiff > 0 ? '+' : '') + wDiff + ' kg vs 上次';
+      if (latest.bf && prev.bf) {
+        const bfDiff = (latest.bf - prev.bf).toFixed(1);
+        document.getElementById('bf-change').textContent = (bfDiff > 0 ? '+' : '') + bfDiff + '% vs 上次';
+      }
+    }
+  }
+
+  // Today's records
+  const allToday = [
+    ...dietToday.map(r => ({ ...r, _type: 'diet' })),
+    ...exToday.map(r => ({ ...r, _type: 'exercise' })),
+  ];
+
+  const el = document.getElementById('today-records');
+  if (!allToday.length) {
+    el.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:2rem;">今天還沒有任何記錄</p>';
+    return;
+  }
+
+  el.innerHTML = allToday.map(r => {
+    if (r._type === 'diet') {
+      return `<div class="record-item">
+        <div class="record-info">
+          <div class="detail">${escapeHtml(r.meal)} · ${escapeHtml(r.food)}</div>
+          <div class="meta">${r.calories ? r.calories + ' kcal' : ''}</div>
+        </div>
+        <span class="record-badge badge-calories">飲食</span>
+      </div>`;
+    }
+    return `<div class="record-item">
+      <div class="record-info">
+        <div class="detail">${escapeHtml(r.type)} · ${r.duration} 分鐘</div>
+        <div class="meta">${r.calories ? '消耗 ' + r.calories + ' kcal' : ''}</div>
+      </div>
+      <span class="record-badge badge-exercise">運動</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// Charts
+// ============================================================
+let charts = {};
+let currentRange = 7;
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRange = btn.dataset.range === 'all' ? 99999 : +btn.dataset.range;
+    renderCharts();
+  });
+});
+
+function filterByRange(records, days) {
+  if (days >= 99999) return records;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  return records.filter(r => r.date >= cutoffStr);
+}
+
+function destroyChart(name) {
+  if (charts[name]) { charts[name].destroy(); charts[name] = null; }
+}
+
+function renderCharts() {
+  const bodyData = filterByRange([...userData.body].sort((a, b) => (a.date || '').localeCompare(b.date || '')), currentRange);
+  const dietData = filterByRange(userData.diet, currentRange);
+  const exData = filterByRange(userData.exercise, currentRange);
+
+  // Weight chart
+  destroyChart('weight');
+  if (bodyData.length) {
+    charts.weight = new Chart(document.getElementById('weight-chart'), {
+      type: 'line',
+      data: {
+        labels: bodyData.map(r => r.date),
+        datasets: [{
+          label: '體重 (kg)',
+          data: bodyData.map(r => r.weight),
+          borderColor: '#4f46e5',
+          backgroundColor: 'rgba(79,70,229,0.1)',
+          fill: true, tension: 0.3, pointRadius: 4,
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  // Body fat chart
+  destroyChart('bf');
+  const bfData = bodyData.filter(r => r.bf);
+  if (bfData.length) {
+    charts.bf = new Chart(document.getElementById('bf-chart'), {
+      type: 'line',
+      data: {
+        labels: bfData.map(r => r.date),
+        datasets: [{
+          label: '體脂率 (%)',
+          data: bfData.map(r => r.bf),
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.1)',
+          fill: true, tension: 0.3, pointRadius: 4,
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  // Daily calories chart
+  destroyChart('calories');
+  const calByDate = {};
+  dietData.forEach(r => { calByDate[r.date] = (calByDate[r.date] || 0) + (r.calories || 0); });
+  const calDates = Object.keys(calByDate).sort();
+  if (calDates.length) {
+    charts.calories = new Chart(document.getElementById('calories-chart'), {
+      type: 'bar',
+      data: {
+        labels: calDates,
+        datasets: [{
+          label: '熱量 (kcal)',
+          data: calDates.map(d => calByDate[d]),
+          backgroundColor: 'rgba(245,158,11,0.6)',
+          borderColor: '#f59e0b', borderWidth: 1, borderRadius: 4,
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  // Exercise duration chart
+  destroyChart('exercise');
+  const exByDate = {};
+  exData.forEach(r => { exByDate[r.date] = (exByDate[r.date] || 0) + (r.duration || 0); });
+  const exDates = Object.keys(exByDate).sort();
+  if (exDates.length) {
+    charts.exercise = new Chart(document.getElementById('exercise-chart'), {
+      type: 'bar',
+      data: {
+        labels: exDates,
+        datasets: [{
+          label: '運動時長 (分鐘)',
+          data: exDates.map(d => exByDate[d]),
+          backgroundColor: 'rgba(59,130,246,0.6)',
+          borderColor: '#3b82f6', borderWidth: 1, borderRadius: 4,
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+}
+
+// ============================================================
+// Export / Import
+// ============================================================
+function exportData() {
+  const data = {
+    diet: userData.diet,
+    exercise: userData.exercise,
+    body: userData.body,
+    exportedAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'health-tracker-' + today() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      const batch = db.batch();
+      let count = 0;
+
+      for (const col of ['diet', 'exercise', 'body']) {
+        if (data[col] && Array.isArray(data[col])) {
+          for (const record of data[col]) {
+            const { id, createdAt, ...rest } = record;
+            const ref = userCol(col).doc();
+            batch.set(ref, { ...rest, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            count++;
+          }
+        }
+      }
+
+      await batch.commit();
+      showToast(`成功匯入 ${count} 筆記錄！`);
+    } catch (err) {
+      showToast('匯入失敗：檔案格式不正確');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================================
+// Init
+// ============================================================
+refreshDashboard();
+</script>
+</body>
+</html>
