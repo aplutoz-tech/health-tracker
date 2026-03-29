@@ -858,9 +858,6 @@ function handleLogout() {
   auth.signOut();
 }
 
-// Enter key for login/register
-document.getElementById('auth-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
-document.getElementById('reg-password2').addEventListener('keydown', e => { if (e.key === 'Enter') handleRegister(); });
 
 // ============================================================
 // Auth state change
