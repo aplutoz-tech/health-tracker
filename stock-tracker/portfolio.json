@@ -1,0 +1,37 @@
+{
+  "holdings": [
+    {
+      "symbol": "2330",
+      "name": "台積電",
+      "market": "TSE",
+      "shares": 100,
+      "avg_cost": 800.0,
+      "alerts": {
+        "target_price": 1100.0,
+        "stop_loss": 700.0
+      }
+    },
+    {
+      "symbol": "2317",
+      "name": "鴻海",
+      "market": "TSE",
+      "shares": 500,
+      "avg_cost": 110.0,
+      "alerts": {
+        "target_price": 160.0,
+        "stop_loss": 95.0
+      }
+    },
+    {
+      "symbol": "0050",
+      "name": "元大台灣50",
+      "market": "TSE",
+      "shares": 200,
+      "avg_cost": 150.0,
+      "alerts": {
+        "target_price": 200.0,
+        "stop_loss": 130.0
+      }
+    }
+  ]
+}
