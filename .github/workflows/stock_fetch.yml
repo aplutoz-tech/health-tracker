@@ -2,13 +2,13 @@ name: 📈 抓取台股股價
 
 on:
   schedule:
-    # 每個交易日 14:40 台灣時間 (06:40 UTC) 收盤後抓取
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 1,2,3,4,5 * * 1-5'
     - cron: '40 6 * * 1-5'
-  workflow_dispatch:  # 允許手動觸發
+  workflow_dispatch:
 
 permissions:
-  contents: write  # 允許 commit prices.json 回 repo
-  issues: write    # 允許建立警示 Issue
+  contents: write
+  issues: write
 
 jobs:
   fetch-and-alert:
@@ -30,6 +30,8 @@ jobs:
 
       - name: 抓取股價
         run: python stock-tracker/scripts/fetch_prices.py
+        env:
+          FUGLE_API_KEY: ${{ secrets.FUGLE_API_KEY }}
 
       - name: Commit prices.json
         run: |
