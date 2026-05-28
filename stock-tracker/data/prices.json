@@ -1,0 +1,68 @@
+{
+  "last_updated": "2026-05-28T14:44:42.411595",
+  "prices": {
+    "2330": {
+      "symbol": "2330",
+      "name": "台積電",
+      "market": "TSE",
+      "price": 2295.0,
+      "open": 2350.0,
+      "high": 2360.0,
+      "low": 2270.0,
+      "prev_close": 2300.0,
+      "volume": 36775,
+      "timestamp": "2026-05-28T14:44:39.407239",
+      "avg_cost": 800.0,
+      "shares": 100,
+      "market_value": 229500.0,
+      "pnl": 149500.0,
+      "pnl_pct": 186.88,
+      "alerts": {
+        "target_price": 1100.0,
+        "stop_loss": 700.0
+      }
+    },
+    "2317": {
+      "symbol": "2317",
+      "name": "鴻海",
+      "market": "TSE",
+      "price": 263.0,
+      "open": 265.0,
+      "high": 269.5,
+      "low": 259.5,
+      "prev_close": 264.0,
+      "volume": 71672,
+      "timestamp": "2026-05-28T14:44:40.539102",
+      "avg_cost": 110.0,
+      "shares": 500,
+      "market_value": 131500.0,
+      "pnl": 76500.0,
+      "pnl_pct": 139.09,
+      "alerts": {
+        "target_price": 160.0,
+        "stop_loss": 95.0
+      }
+    },
+    "0050": {
+      "symbol": "0050",
+      "name": "元大台灣50",
+      "market": "TSE",
+      "price": 100.5,
+      "open": 104.0,
+      "high": 104.25,
+      "low": 100.1,
+      "prev_close": 102.55,
+      "volume": 140131,
+      "timestamp": "2026-05-28T14:44:41.910335",
+      "avg_cost": 150.0,
+      "shares": 200,
+      "market_value": 20100.0,
+      "pnl": -9900.0,
+      "pnl_pct": -33.0,
+      "alerts": {
+        "target_price": 200.0,
+        "stop_loss": 130.0
+      }
+    }
+  }
+}
