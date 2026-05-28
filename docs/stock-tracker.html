@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 台股投資組合監控</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --border: #334155;
+    --text: #f1f5f9; --muted: #94a3b8;
+    --green: #22c55e; --red: #ef4444; --blue: #3b82f6; --yellow: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; padding: 1.5rem; }
+  h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; }
+  .card-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0.4rem; }
+  .card-value { font-size: 1.6rem; font-weight: 700; }
+  .card-value.pos { color: var(--green); }
+  .card-value.neg { color: var(--red); }
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  @media(max-width:700px){ .charts-row { grid-template-columns: 1fr; } }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; }
+  .chart-card h2 { font-size: 0.9rem; color: var(--muted); margin-bottom: 1rem; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  th { background: #0f172a; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: .05em; padding: 0.75rem 1rem; text-align: right; }
+  th:first-child { text-align: left; }
+  td { padding: 0.85rem 1rem; border-top: 1px solid var(--border); font-size: 0.9rem; text-align: right; }
+  td:first-child { text-align: left; font-weight: 600; }
+  tr:hover td { background: #263148; }
+  .tag { display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.4rem; }
+  .tag.tse { background: #1e40af33; color: #93c5fd; }
+  .tag.otc { background: #14532d33; color: #86efac; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .alert-badge { font-size: 0.7rem; margin-left: 0.3rem; }
+  #last-updated { color: var(--muted); font-size: 0.78rem; margin-bottom: 1rem; }
+  .loading { color: var(--muted); text-align: center; padding: 3rem; }
+</style>
+</head>
+<body>
+<h1>📊 台股投資組合監控</h1>
+<p class="subtitle">數據來源：TWSE mis API ｜ 每個交易日 14:40 自動更新</p>
+<div id="last-updated">載入中…</div>
+
+<div class="grid">
+  <div class="card"><div class="card-label">總市值</div><div class="card-value" id="total-value">—</div></div>
+  <div class="card"><div class="card-label">總損益</div><div class="card-value" id="total-pnl">—</div></div>
+  <div class="card"><div class="card-label">報酬率</div><div class="card-value" id="total-pct">—</div></div>
+  <div class="card"><div class="card-label">持股數</div><div class="card-value" id="stock-count">—</div></div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-card">
+    <h2>📦 持倉佔比</h2>
+    <canvas id="pie-chart" height="220"></canvas>
+  </div>
+  <div class="chart-card">
+    <h2>📈 個股損益 (%)</h2>
+    <canvas id="bar-chart" height="220"></canvas>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>股票</th><th>現價</th><th>昨收</th><th>漲跌</th>
+      <th>持股</th><th>均成本</th><th>市值</th><th>損益</th><th>報酬率</th><th>警示</th>
+    </tr>
+  </thead>
+  <tbody id="table-body"><tr><td colspan="10" class="loading">載入中…</td></tr></tbody>
+</table>
+
+<script>
+// prices.json 的 raw GitHub URL（GitHub Pages 無法用相對路徑跨目錄）
+const PRICES_URL =
+  'https://raw.githubusercontent.com/aplutoz-tech/health-tracker/main/stock-tracker/data/prices.json';
+
+const fmt  = (n, d=0) => n == null ? '—' : n.toLocaleString('zh-TW', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtP = n => n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+const cls  = n => n == null ? '' : n >= 0 ? 'pos' : 'neg';
+const COLORS = ['#3b82f6','#f59e0b','#22c55e','#a855f7','#ec4899','#14b8a6','#f97316'];
+
+async function load() {
+  let data;
+  try {
+    const r = await fetch(PRICES_URL + '?t=' + Date.now());
+    if (!r.ok) throw new Error(r.status);
+    data = await r.json();
+  } catch(e) {
+    document.getElementById('last-updated').textContent =
+      '⚠️ 無法載入股價資料（請先執行 GitHub Actions workflow 抓取股價）';
+    document.getElementById('table-body').innerHTML =
+      '<tr><td colspan="10" class="loading">前往 Actions → 📈 抓取台股股價 → Run workflow</td></tr>';
+    return;
+  }
+
+  document.getElementById('last-updated').textContent =
+    `🕐 最後更新：${data.last_updated?.replace('T',' ').slice(0,16) ?? '未知'}`;
+
+  const stocks = Object.values(data.prices);
+
+  // Summary cards
+  const totalValue = stocks.reduce((s,p) => s + (p.market_value ?? 0), 0);
+  const totalCost  = stocks.reduce((s,p) => s + ((p.avg_cost ?? 0) * (p.shares ?? 0)), 0);
+  const totalPnl   = totalValue - totalCost;
+  const totalPct   = totalCost > 0 ? totalPnl / totalCost * 100 : null;
+
+  document.getElementById('total-value').textContent = '$' + fmt(totalValue);
+  const pnlEl = document.getElementById('total-pnl');
+  pnlEl.textContent = (totalPnl >= 0 ? '+$' : '-$') + fmt(Math.abs(totalPnl));
+  pnlEl.className = 'card-value ' + cls(totalPnl);
+  const pctEl = document.getElementById('total-pct');
+  pctEl.textContent = fmtP(totalPct);
+  pctEl.className = 'card-value ' + cls(totalPct);
+  document.getElementById('stock-count').textContent = stocks.length + ' 支';
+
+  // Table
+  document.getElementById('table-body').innerHTML = stocks.map(p => {
+    const chg    = p.prev_close ? p.price - p.prev_close : null;
+    const chgPct = p.prev_close ? chg / p.prev_close * 100 : null;
+    const alerts = p.alerts ?? {};
+    let badge = '';
+    if (alerts.target_price && p.price >= alerts.target_price) badge += '<span title="達到目標價">🎯</span>';
+    if (alerts.stop_loss    && p.price <= alerts.stop_loss)    badge += '<span title="觸發停損">🛑</span>';
+    const hint = [
+      alerts.target_price ? `目標 $${fmt(alerts.target_price)}` : '',
+      alerts.stop_loss    ? `停損 $${fmt(alerts.stop_loss)}`    : '',
+    ].filter(Boolean).join('<br>');
+    return `<tr>
+      <td>${p.symbol} ${p.name}<span class="tag ${p.market?.toLowerCase()}">${p.market}</span></td>
+      <td>$${fmt(p.price,2)}</td>
+      <td>$${fmt(p.prev_close,2)}</td>
+      <td class="${cls(chg)}">${chg!=null?(chg>=0?'+':'')+fmt(chg,2)+' ('+fmtP(chgPct)+')':'—'}</td>
+      <td>${fmt(p.shares)}</td>
+      <td>$${fmt(p.avg_cost,2)}</td>
+      <td>$${fmt(p.market_value)}</td>
+      <td class="${cls(p.pnl)}">$${fmt(p.pnl)}</td>
+      <td class="${cls(p.pnl_pct)}">${fmtP(p.pnl_pct)}</td>
+      <td>${badge||'—'}<br><small style="color:var(--muted);font-size:.68rem">${hint}</small></td>
+    </tr>`;
+  }).join('');
+
+  // Charts
+  new Chart(document.getElementById('pie-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: stocks.map(p => `${p.symbol} ${p.name}`),
+      datasets: [{
+        data: stocks.map(p => p.market_value ?? 0),
+        backgroundColor: COLORS, borderWidth: 2, borderColor: '#1e293b'
+      }]
+    },
+    options: { plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } } }
+  });
+
+  const pcts = stocks.map(p => p.pnl_pct ?? 0);
+  new Chart(document.getElementById('bar-chart'), {
+    type: 'bar',
+    data: {
+      labels: stocks.map(p => p.symbol),
+      datasets: [{
+        label: '報酬率 (%)',
+        data: pcts,
+        backgroundColor: pcts.map(v => v >= 0 ? '#22c55e88' : '#ef444488'),
+        borderColor:      pcts.map(v => v >= 0 ? '#22c55e'   : '#ef4444'),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: '#334155' } }
+      }
+    }
+  });
+}
+
+load();
+</script>
+</body>
+</html>

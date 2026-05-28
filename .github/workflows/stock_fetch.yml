@@ -1,0 +1,44 @@
+name: 📈 抓取台股股價
+
+on:
+  schedule:
+    # 每個交易日 14:40 台灣時間 (06:40 UTC) 收盤後抓取
+    - cron: '40 6 * * 1-5'
+  workflow_dispatch:  # 允許手動觸發
+
+permissions:
+  contents: write  # 允許 commit prices.json 回 repo
+  issues: write    # 允許建立警示 Issue
+
+jobs:
+  fetch-and-alert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r stock-tracker/scripts/requirements.txt
+
+      - name: 抓取股價
+        run: python stock-tracker/scripts/fetch_prices.py
+
+      - name: Commit prices.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add stock-tracker/data/prices.json
+          git diff --cached --quiet || git commit -m "data: update stock prices $(date +'%Y-%m-%d %H:%M')"
+          git push
+
+      - name: 檢查警示並建立 Issue
+        run: python stock-tracker/scripts/check_alerts.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
