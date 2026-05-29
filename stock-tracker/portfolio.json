@@ -1,37 +1,76 @@
 {
   "holdings": [
     {
+      "symbol": "8299",
+      "name": "群聯",
+      "market": "TSE",
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
+    },
+    {
+      "symbol": "8027",
+      "name": "鈦昇",
+      "market": "OTC",
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
+    },
+    {
+      "symbol": "2301",
+      "name": "光寶科",
+      "market": "TSE",
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
+    },
+    {
+      "symbol": "1802",
+      "name": "台玻",
+      "market": "TSE",
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
+    },
+    {
+      "symbol": "6781",
+      "name": "AES-KY",
+      "market": "TSE",
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
+    },
+    {
       "symbol": "2330",
       "name": "台積電",
       "market": "TSE",
-      "shares": 100,
-      "avg_cost": 800.0,
-      "alerts": {
-        "target_price": 1100.0,
-        "stop_loss": 700.0
-      }
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
     },
     {
-      "symbol": "2317",
-      "name": "鴻海",
+      "symbol": "3324",
+      "name": "雙鴻",
       "market": "TSE",
-      "shares": 500,
-      "avg_cost": 110.0,
-      "alerts": {
-        "target_price": 160.0,
-        "stop_loss": 95.0
-      }
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
     },
     {
-      "symbol": "0050",
-      "name": "元大台灣50",
+      "symbol": "6207",
+      "name": "雷科",
+      "market": "OTC",
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
+    },
+    {
+      "symbol": "2492",
+      "name": "華新科",
       "market": "TSE",
-      "shares": 200,
-      "avg_cost": 150.0,
-      "alerts": {
-        "target_price": 200.0,
-        "stop_loss": 130.0
-      }
+      "shares": 0,
+      "avg_cost": 0.0,
+      "alerts": { "target_price": 0.0, "stop_loss": 0.0 }
     }
   ]
 }
