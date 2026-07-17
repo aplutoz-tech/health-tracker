@@ -1,15 +1,15 @@
 {
-  "last_updated": "2026-07-17T03:58:27.593366",
+  "last_updated": "2026-07-17T06:22:25.392301",
   "prices": {
     "8299": {
       "symbol": "8299",
       "market": "TSE",
-      "timestamp": "2026-07-17T03:58:23.404468",
+      "timestamp": "2026-07-17T06:22:21.031471",
       "name": "群聯",
-      "price": 1795.0,
+      "price": 1785.0,
       "open": 1860.0,
       "high": 1870.0,
-      "low": 1790.0,
+      "low": 1785.0,
       "prev_close": 1980.0,
       "volume": 0,
       "alerts": {
@@ -20,12 +20,12 @@
     "8027": {
       "symbol": "8027",
       "market": "OTC",
-      "timestamp": "2026-07-17T03:58:23.894003",
+      "timestamp": "2026-07-17T06:22:21.537821",
       "name": "鈦昇",
-      "price": 220.0,
+      "price": 215.5,
       "open": 221.5,
       "high": 231.5,
-      "low": 218.0,
+      "low": 215.5,
       "prev_close": 239.0,
       "volume": 0,
       "alerts": {
@@ -36,12 +36,12 @@
     "2301": {
       "symbol": "2301",
       "market": "TSE",
-      "timestamp": "2026-07-17T03:58:24.380346",
+      "timestamp": "2026-07-17T06:22:22.042606",
       "name": "光寶科",
-      "price": 200.0,
+      "price": 196.5,
       "open": 209.0,
       "high": 210.0,
-      "low": 200.0,
+      "low": 196.5,
       "prev_close": 218.0,
       "volume": 0,
       "alerts": {
@@ -52,12 +52,12 @@
     "1802": {
       "symbol": "1802",
       "market": "TSE",
-      "timestamp": "2026-07-17T03:58:24.866875",
+      "timestamp": "2026-07-17T06:22:22.553430",
       "name": "台玻",
-      "price": 57.8,
+      "price": 56.6,
       "open": 59.5,
       "high": 59.5,
-      "low": 57.8,
+      "low": 56.6,
       "prev_close": 61.7,
       "volume": 0,
       "alerts": {
@@ -68,12 +68,12 @@
     "6781": {
       "symbol": "6781",
       "market": "TSE",
-      "timestamp": "2026-07-17T03:58:25.349236",
+      "timestamp": "2026-07-17T06:22:23.058656",
       "name": "AES-KY",
-      "price": 971.0,
+      "price": 960.0,
       "open": 1010.0,
       "high": 1020.0,
-      "low": 970.0,
+      "low": 946.0,
       "prev_close": 1045.0,
       "volume": 0,
       "alerts": {
@@ -84,12 +84,12 @@
     "2330": {
       "symbol": "2330",
       "market": "TSE",
-      "timestamp": "2026-07-17T03:58:25.836619",
+      "timestamp": "2026-07-17T06:22:23.569790",
       "name": "台積電",
-      "price": 2350.0,
+      "price": 2290.0,
       "open": 2375.0,
       "high": 2395.0,
-      "low": 2350.0,
+      "low": 2290.0,
       "prev_close": 2470.0,
       "volume": 0,
       "alerts": {
@@ -100,9 +100,9 @@
     "3324": {
       "symbol": "3324",
       "market": "TSE",
-      "timestamp": "2026-07-17T03:58:26.324949",
+      "timestamp": "2026-07-17T06:22:24.075089",
       "name": "雙鴻",
-      "price": 896.0,
+      "price": 913.0,
       "open": 879.0,
       "high": 930.0,
       "low": 869.0,
@@ -116,12 +116,12 @@
     "6207": {
       "symbol": "6207",
       "market": "OTC",
-      "timestamp": "2026-07-17T03:58:26.807074",
+      "timestamp": "2026-07-17T06:22:24.580706",
       "name": "雷科",
-      "price": 131.5,
+      "price": 130.5,
       "open": 135.0,
       "high": 143.5,
-      "low": 130.5,
+      "low": 129.5,
       "prev_close": 140.5,
       "volume": 0,
       "alerts": {
@@ -132,7 +132,7 @@
     "2492": {
       "symbol": "2492",
       "market": "TSE",
-      "timestamp": "2026-07-17T03:58:27.293075",
+      "timestamp": "2026-07-17T06:22:25.092046",
       "name": "華新科",
       "price": 307.5,
       "open": 307.5,
